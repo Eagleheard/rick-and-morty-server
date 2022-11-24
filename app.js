@@ -11,31 +11,18 @@ const auth = require("./auth");
 
 dbConnect();
 
-const whitelist = process.env.WHITELIST;
-const corsOptions = {
-  origin: function (origin, callback) {
-    if (whitelist.indexOf(origin) !== -1) {
-      callback(null, true);
-    } else {
-      callback(null, false);
-    }
-  },
-  methods: ["GET", "PUT", "POST", "DELETE", "OPTIONS"],
-  optionsSuccessStatus: 200,
-  credentials: true,
-  allowedHeaders: [
-    "Content-Type",
-    "Authorization",
-    "X-Requested-With",
-    "device-remember-token",
-    "Access-Control-Allow-Credentials",
-    "Access-Control-Allow-Origin",
-    "Origin",
-    "Accept",
-  ],
-};
-
-app.use(cors(corsOptions));
+app.use((req, res, next) => {
+  res.setHeader("Access-Control-Allow-Origin", "*");
+  res.setHeader(
+    "Access-Control-Allow-Headers",
+    "Origin, X-Requested-With, Content, Accept, Content-Type, Authorization"
+  );
+  res.setHeader(
+    "Access-Control-Allow-Methods",
+    "GET, POST, PUT, DELETE, PATCH, OPTIONS"
+  );
+  next();
+});
 app.use(bodyParser.json());
 app.use(bodyParser.urlencoded({ extended: true }));
 
