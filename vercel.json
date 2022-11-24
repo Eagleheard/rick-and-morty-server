@@ -2,5 +2,5 @@
   "version": 2,
   "name": "rick-and-morty-server",
   "builds": [{ "src": "app.js", "use": "@vercel/node" }],
-  "routes": [{ "src": "/(.*)", "dest": "/app.js" }]
+  "routes": [{ "src": "/(.*)", "dest": "/index.js" }]
 }
