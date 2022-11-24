@@ -1,5 +1,6 @@
 const express = require("express");
 const app = express();
+const cors = require("cors");
 const bodyParser = require("body-parser");
 const bcrypt = require("bcrypt");
 const jwt = require("jsonwebtoken");
@@ -10,19 +11,31 @@ const auth = require("./auth");
 
 dbConnect();
 
-app.use((req, res, next) => {
-  res.setHeader("Access-Control-Allow-Origin", "*");
-  res.setHeader(
-    "Access-Control-Allow-Headers",
-    "Origin, X-Requested-With, Content, Accept, Content-Type, Authorization"
-  );
-  res.setHeader(
-    "Access-Control-Allow-Methods",
-    "GET, POST, PUT, DELETE, PATCH, OPTIONS"
-  );
-  next();
-});
+const whitelist = process.env.WHITELIST;
+const corsOptions = {
+  origin: function (origin, callback) {
+    if (whitelist.indexOf(origin) !== -1) {
+      callback(null, true);
+    } else {
+      callback(null, false);
+    }
+  },
+  methods: ["GET", "PUT", "POST", "DELETE", "OPTIONS"],
+  optionsSuccessStatus: 200,
+  credentials: true,
+  allowedHeaders: [
+    "Content-Type",
+    "Authorization",
+    "X-Requested-With",
+    "device-remember-token",
+    "Access-Control-Allow-Credentials",
+    "Access-Control-Allow-Origin",
+    "Origin",
+    "Accept",
+  ],
+};
 
+app.use(cors(corsOptions));
 app.use(bodyParser.json());
 app.use(bodyParser.urlencoded({ extended: true }));
 
@@ -38,13 +51,14 @@ app.post("/register", (request, response) => {
       const user = new User({
         email: request.body.email,
         password: hashedPassword,
+        description: request.body.description,
       });
 
       user
         .save()
         .then((result) => {
           response.status(201).send({
-            message: "User Created Successfully",
+            message: "User created successfully",
             result,
           });
         })
@@ -63,28 +77,18 @@ app.post("/register", (request, response) => {
     });
 });
 
-// login endpoint
 app.post("/login", (request, response) => {
-  // check if email exists
   User.findOne({ email: request.body.email })
-
-    // if email exists
     .then((user) => {
-      // compare the password entered and the hashed password found
       bcrypt
         .compare(request.body.password, user.password)
-
-        // if the passwords match
         .then((passwordCheck) => {
-          // check if password matches
           if (!passwordCheck) {
             return response.status(400).send({
-              message: "Passwords does not match",
+              message: "Wrong email or password",
               error,
             });
           }
-
-          //   create JWT token
           const token = jwt.sign(
             {
               userId: user._id,
@@ -93,39 +97,47 @@ app.post("/login", (request, response) => {
             "RANDOM-TOKEN",
             { expiresIn: "24h" }
           );
-
-          //   return success response
           response.status(200).send({
             message: "Login Successful",
             email: user.email,
             token,
           });
         })
-        // catch error if password do not match
         .catch((error) => {
           response.status(400).send({
-            message: "Passwords does not match",
+            message: "Wrong email or password",
             error,
           });
         });
     })
-    // catch error if email does not exist
     .catch((e) => {
       response.status(404).send({
-        message: "Email not found",
+        message: "Wrong email or password",
         e,
       });
     });
 });
 
-// free endpoint
-app.get("/free-endpoint", (request, response) => {
-  response.json({ message: "You are free to access me anytime" });
+app.put("/update/:email", async (req, res) => {
+  const { email } = req.params;
+  const filter = { email: email };
+
+  const updatedUser = await User.findOneAndUpdate(filter, req.body, {
+    new: true,
+  }).catch((error) => {
+    return res.status(500).send(error);
+  });
+
+  return res.status(200).json({
+    message: "Updated user",
+    data: updatedUser,
+  });
 });
 
-// authentication endpoint
-app.get("/auth-endpoint", auth, (request, response) => {
-  response.send({ message: "You are authorized to access me" });
+app.get("/auth", auth, (request, response) => {
+  response.send({
+    email: request.user.userEmail,
+  });
 });
 
 module.exports = app;
