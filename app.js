@@ -23,7 +23,17 @@ app.use((req, res, next) => {
   );
   next();
 });
-app.use(cors());
+const whitelist = process.env.WHITELIST;
+const corsOptions = {
+  origin: function (origin, callback) {
+    if (whitelist.indexOf(origin) !== -1) {
+      callback(null, true);
+    } else {
+      callback(null, false);
+    }
+  },
+};
+app.use(cors(corsOptions));
 app.use(bodyParser.json());
 app.use(bodyParser.urlencoded({ extended: true }));
 
