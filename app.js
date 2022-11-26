@@ -48,6 +48,7 @@ app.post("/register", (request, response) => {
     .hash(request.body.password, 10)
     .then((hashedPassword) => {
       const user = new User({
+        name: request.body.name,
         email: request.body.email,
         password: hashedPassword,
         description: request.body.description,
@@ -83,10 +84,9 @@ app.post("/login", (request, response) => {
         .compare(request.body.password, user.password)
         .then((passwordCheck) => {
           if (!passwordCheck) {
-            return response.status(400).send({
-              message: "Wrong email or password",
-              error,
-            });
+            return response
+              .status(400)
+              .send({ message: "Wrong email or password", error });
           }
           const token = jwt.sign(
             {
@@ -103,34 +103,45 @@ app.post("/login", (request, response) => {
           });
         })
         .catch((error) => {
-          response.status(400).send({
-            message: "Wrong email or password",
-            error,
-          });
+          response
+            .status(400)
+            .send({ message: "Wrong email or password", error });
         });
     })
     .catch((e) => {
-      response.status(404).send({
-        message: "Wrong email or password",
-        e,
-      });
+      response.status(404).send({ message: "Not found", e });
     });
 });
 
-app.put("/update/:email", async (req, res) => {
-  const { email } = req.params;
+app.get("/profile/:email", async (request, response) => {
+  const { email } = request.params;
+  const user = await User.findOne({ email: email }).catch((error) => {
+    return response.status(500).send(error);
+  });
+  if (user.email !== email) {
+    return response
+      .status(403)
+      .send("You does not have access for this account");
+  } else {
+    response.status(200).json({
+      email: user.email,
+      name: user.name,
+      description: user.description,
+    });
+  }
+});
+
+app.put("/update/:email", async (request, response) => {
+  const { email } = request.params;
   const filter = { email: email };
 
-  const updatedUser = await User.findOneAndUpdate(filter, req.body, {
+  const updatedUser = await User.findOneAndUpdate(filter, request.body, {
     new: true,
   }).catch((error) => {
-    return res.status(500).send(error);
+    return response.status(500).send(error);
   });
 
-  return res.status(200).json({
-    message: "Updated user",
-    data: updatedUser,
-  });
+  return response.status(200).json(updatedUser);
 });
 
 app.get("/auth", auth, (request, response) => {
