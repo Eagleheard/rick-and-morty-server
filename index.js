@@ -8,6 +8,7 @@ import dotenv from "dotenv";
 import router from "./Routes/user.js";
 import ErrorHandler from "./Middleware/errorHandler.js";
 
+dotenv.config();
 const app = express();
 dbConnect();
 
