@@ -1,8 +1,11 @@
 import jwt from "jsonwebtoken";
 import bcrypt from "bcrypt";
+import dotenv from "dotenv";
 
 import User from "../db/userModel.js";
 import appError from "../Errors/appError.js";
+
+dotenv.config();
 
 const createJwt = (id, email, name, description) => {
   return jwt.sign({ id, email, name, description }, process.env.SECRET_KEY, {
