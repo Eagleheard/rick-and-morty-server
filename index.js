@@ -3,11 +3,12 @@ import express from "express";
 import dbConnect from "./db/dbConnect.js";
 import cors from "cors";
 import bodyParser from "body-parser";
-import dotenv from "dotenv";
+import * as dotenv from "dotenv";
 
 import router from "./Routes/user.js";
 import ErrorHandler from "./Middleware/errorHandler.js";
 
+dotenv.config();
 const app = express();
 dbConnect();
 
